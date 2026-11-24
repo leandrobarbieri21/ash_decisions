@@ -53,23 +53,24 @@ defmodule AshDecisions.Engine do
   @spec applications() :: [atom()]
   def applications do
     @engine
-    |> walk(MapSet.new(@runtime))
-    |> MapSet.difference(MapSet.new(@runtime))
+    |> walk(@runtime)
+    |> Enum.reject(&(&1 in @runtime))
     |> Enum.filter(&Application.spec(&1, :vsn))
     |> Enum.sort()
   end
 
+  # A handful of applications, so a list is the set.
   defp walk([], seen), do: seen
 
   defp walk([app | rest], seen) do
-    if MapSet.member?(seen, app) do
+    if app in seen do
       walk(rest, seen)
     else
       deps =
         (Application.spec(app, :applications) || []) ++
           (Application.spec(app, :included_applications) || [])
 
-      walk(deps ++ rest, MapSet.put(seen, app))
+      walk(deps ++ rest, [app | seen])
     end
   end
 end
